@@ -1,0 +1,227 @@
+use std::sync::Arc;
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::Stylize,
+    text::{Line, Span},
+    widgets::Paragraph,
+};
+use crate::{app::FocusedBlock, config::Config};
+pub struct Help;
+impl Help {
+    pub fn render(
+        frame: &mut Frame,
+        area: Rect,
+        focused_block: FocusedBlock,
+        rendering_block: Rect,
+        config: Arc<Config>,
+    ) {
+        let help = match focused_block {
+            FocusedBlock::PairedDevices => {
+                if area.width > 120 {
+                    vec![Line::from(vec![
+                        Span::from("k,").bold(),
+                        Span::from("  Up"),
+                        Span::from(" | "),
+                        Span::from("j,").bold(),
+                        Span::from("  Down"),
+                        Span::from(" | "),
+                        Span::from("s").bold(),
+                        Span::from("  Сканирование вкл./выкл."),
+                        Span::from(" | "),
+                        Span::from(config.paired_device.unpair.to_string()).bold(),
+                        Span::from("  Unpair"),
+                        Span::from(" | "),
+                        Span::from("Result или ↵ ").bold(),
+                        Span::from(" Dis/Connect"),
+                        Span::from(" | "),
+                        Span::from(config.paired_device.toggle_trust.to_string()).bold(),
+                        Span::from(" Un/Trust"),
+                        Span::from(" | "),
+                        Span::from(config.paired_device.toggle_favorite.to_string()).bold(),
+                        Span::from(" Un/Favorite"),
+                        Span::from(" | "),
+                        Span::from(config.paired_device.rename.to_string()).bold(),
+                        Span::from(" Rename"),
+                        Span::from(" | "),
+                        Span::from("⇄").bold(),
+                        Span::from(" Nav"),
+                    ])]
+                } else {
+                    vec![
+                        Line::from(vec![
+                            Span::from("Result или ↵ ").bold(),
+                            Span::from(" Dis/Connect"),
+                            Span::from(" | "),
+                            Span::from("s").bold(),
+                            Span::from("  Сканирование вкл./выкл."),
+                            Span::from(" | "),
+                            Span::from(config.paired_device.unpair.to_string()).bold(),
+                            Span::from("  Unpair"),
+                            Span::from(" | "),
+                            Span::from(config.paired_device.toggle_favorite.to_string()).bold(),
+                            Span::from(" Un/Favorite"),
+                        ]),
+                        Line::from(vec![
+                            Span::from(config.paired_device.toggle_trust.to_string()).bold(),
+                            Span::from(" Un/Trust"),
+                            Span::from(" | "),
+                            Span::from(config.paired_device.rename.to_string()).bold(),
+                            Span::from(" Rename"),
+                            Span::from(" | "),
+                            Span::from("k,").bold(),
+                            Span::from("  Up"),
+                            Span::from(" | "),
+                            Span::from("j,").bold(),
+                            Span::from("  Down"),
+                            Span::from(" | "),
+                            Span::from("⇄").bold(),
+                            Span::from(" Nav"),
+                        ]),
+                    ]
+                }
+            }
+            FocusedBlock::NewDevices => vec![Line::from(vec![
+                Span::from("k,").bold(),
+                Span::from("  Up"),
+                Span::from(" | "),
+                Span::from("j,").bold(),
+                Span::from("  Down"),
+                Span::from(" | "),
+                Span::from("Result или ↵ ").bold(),
+                Span::from(" Pair"),
+                Span::from(" | "),
+                Span::from("s").bold(),
+                Span::from("  Сканирование вкл./выкл."),
+                Span::from(" | "),
+                Span::from("⇄").bold(),
+                Span::from(" Nav"),
+            ])],
+            FocusedBlock::Adapter => {
+                if area.width > 80 {
+                    vec![Line::from(vec![
+                        Span::from("s").bold(),
+                        Span::from("  Сканирование вкл./выкл."),
+                        Span::from(" | "),
+                        Span::from(config.adapter.toggle_pairing.to_string()).bold(),
+                        Span::from(" Сопряжение вкл./выкл."),
+                        Span::from(" | "),
+                        Span::from(config.adapter.toggle_power.to_string()).bold(),
+                        Span::from(" Включение/выключение питания"),
+                        Span::from(" | "),
+                        Span::from(config.adapter.toggle_discovery.to_string()).bold(),
+                        Span::from(" Обнаружение вкл./выкл."),
+                        Span::from(" | "),
+                        Span::from("⇄").bold(),
+                        Span::from(" Nav"),
+                    ])]
+                } else {
+                    vec![
+                        Line::from(vec![
+                            Span::from("s").bold(),
+                            Span::from("  Сканирование вкл./выкл."),
+                            Span::from(" | "),
+                            Span::from(config.adapter.toggle_pairing.to_string()).bold(),
+                            Span::from(" Сопряжение вкл./выкл."),
+                        ]),
+                        Line::from(vec![
+                            Span::from(config.adapter.toggle_power.to_string()).bold(),
+                            Span::from(" Включение/выключение питания"),
+                            Span::from(" | "),
+                            Span::from(config.adapter.toggle_discovery.to_string()).bold(),
+                            Span::from(" Обнаружение вкл./выкл."),
+                            Span::from(" | "),
+                            Span::from("⇄").bold(),
+                            Span::from(" Nav"),
+                        ]),
+                    ]
+                }
+            }
+            FocusedBlock::SetDeviceAliasBox => {
+                vec![Line::from(vec![
+                    Span::from("󱊷 ").bold(),
+                    Span::from(" Discard"),
+                    Span::from(" | "),
+                    Span::from("↵ ").bold(),
+                    Span::from(" Apply"),
+                ])]
+            }
+            FocusedBlock::RequestConfirmation => {
+                vec![Line::from(vec![
+                    Span::from("↵ ").bold(),
+                    Span::from(" Ok"),
+                    Span::from(" | "),
+                    Span::from("󱊷 ").bold(),
+                    Span::from(" Discard"),
+                    Span::from(" | "),
+                    Span::from("⇄").bold(),
+                    Span::from(" Nav"),
+                ])]
+            }
+            FocusedBlock::EnterPinCode | FocusedBlock::EnterPasskey => {
+                vec![Line::from(vec![
+                    Span::from("󱊷 ").bold(),
+                    Span::from(" Discard"),
+                    Span::from(" | "),
+                    Span::from("⇄").bold(),
+                    Span::from(" Nav"),
+                    Span::from(" | "),
+                    Span::from("↵ ").bold(),
+                    Span::from(" Submit"),
+                ])]
+            }
+            FocusedBlock::DisplayPinCode => {
+                vec![Line::from(vec![
+                    Span::from(" Result или ↵ ").bold(),
+                    Span::from(" Ok"),
+                ])]
+            }
+            FocusedBlock::DisplayPasskey => {
+                vec![Line::from(vec![
+                    Span::from(" 󱊷  ").bold(),
+                    Span::from(" Discard"),
+                ])]
+            }
+        };
+        let help = Paragraph::new(help).centered().blue();
+        frame.render_widget(help, rendering_block);
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use insta::assert_snapshot;
+    use ratatui::{Terminal, backend::TestBackend};
+    use rstest::rstest;
+    #[rstest]
+    fn render_help(
+        #[values(
+            FocusedBlock::Adapter,
+            FocusedBlock::PairedDevices,
+            FocusedBlock::NewDevices,
+            FocusedBlock::SetDeviceAliasBox,
+            FocusedBlock::RequestConfirmation,
+            FocusedBlock::EnterPinCode,
+            FocusedBlock::EnterPasskey,
+            FocusedBlock::DisplayPinCode,
+            FocusedBlock::DisplayPasskey
+        )]
+        focused_block: FocusedBlock,
+        #[values(80, 81, 120, 121)] width: u16,
+    ) {
+        let mut terminal = Terminal::new(TestBackend::new(width, 2)).unwrap();
+        terminal
+            .draw(|frame| {
+                Help::render(
+                    frame,
+                    frame.area(),
+                    focused_block,
+                    frame.area(),
+                    Config::new(None).into(),
+                );
+            })
+            .unwrap();
+        let snapshot_name = format!("{:?}-{}", focused_block, width);
+        assert_snapshot!(snapshot_name, terminal.backend());
+    }
+}

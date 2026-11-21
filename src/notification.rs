@@ -1,0 +1,127 @@
+use ratatui::{
+    Frame,
+    layout::{Alignment, Constraint, Layout, Rect},
+    style::{Color, Modifier, Style},
+    text::{Line, Text},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
+};
+use tokio::sync::mpsc::UnboundedSender;
+use crate::{app::AppResult, event::Event, string_ref::StringRef};
+#[derive(Debug, Clone)]
+pub struct Notification {
+    pub message: StringRef,
+    pub level: NotificationLevel,
+    pub ttl: u16,
+}
+#[derive(Debug, Clone)]
+pub enum NotificationLevel {
+    Error,
+    Warning,
+    Info,
+}
+impl Notification {
+    pub fn render(&self, index: usize, frame: &mut Frame, area: Rect) {
+        let (color, title) = match self.level {
+            NotificationLevel::Info => (Color::Green, "Info"),
+            NotificationLevel::Warning => (Color::Yellow, "Warning"),
+            NotificationLevel::Error => (Color::Red, "Error"),
+        };
+        let mut text = Text::from(vec![
+            Line::from(title).style(Style::new().fg(color).add_modifier(Modifier::BOLD)),
+        ]);
+        text.extend(Text::from(self.message.as_str()));
+        let notification_height = text.height() as u16 + 2;
+        let notification_width = text.width() as u16 + 4;
+        let block = Paragraph::new(text)
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: false })
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(Style::default())
+                    .border_type(BorderType::Thick)
+                    .border_style(Style::default().fg(color)),
+            );
+        let area = notification_rect(index as u16, notification_height, notification_width, area);
+        frame.render_widget(Clear, area);
+        frame.render_widget(block, area);
+    }
+    pub fn send(
+        message: StringRef,
+        level: NotificationLevel,
+        sender: UnboundedSender<Event>,
+    ) -> AppResult<()> {
+        let notif = Notification {
+            message,
+            level,
+            ttl: 2,
+        };
+        sender.send(Event::Notification(notif))?;
+        Ok(())
+    }
+}
+pub fn notification_rect(offset: u16, height: u16, width: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::vertical(
+        [
+            Constraint::Length(height * offset),
+            Constraint::Length(height),
+            Constraint::Min(1),
+        ]
+        .as_ref(),
+    )
+    .split(r);
+    Layout::horizontal(
+        [
+            Constraint::Min(1),
+            Constraint::Length(width),
+            Constraint::Length(2),
+        ]
+        .as_ref(),
+    )
+    .split(popup_layout[1])[1]
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use insta::assert_snapshot;
+    use ratatui::{Terminal, backend::TestBackend};
+    use rstest::rstest;
+    use std::hash::{DefaultHasher, Hash, Hasher};
+    #[rstest]
+    fn render_good(
+        #[values(
+            "short",
+            "with\nnewline",
+            "ЧРЕЗВЫЧАЙНО ДОЛГО БЕЗ новой строки. Но это хорошо, кто не пропагандирует свободную долину? В стремлении к великим целям ожидается, что жизнь станет великой авиацией. Дети в указанном дуе. Никто, ни мой яд, мое горло не нуждаются в ненависти, кроме работника. Fusce velit nibh, euismod vel lectus id, Placerat.",
+            r"очень длинный С новой строкой
+обслуживание клиентов Но кто не хочет оказаться в свободной долине?
+Реклама Стремясь к великим целям, мы ожидаем, что жизнь станет великой авиацией.
+Дети в указанном дуе. Ни мой яд, мое горло не нуждается в ненависти, сотрудник
+кроме Fusce velit nibh, euismod vel lectus id, Placerat."
+        )]
+        message_str: &'static str,
+        #[values(
+            NotificationLevel::Info,
+            NotificationLevel::Warning,
+            NotificationLevel::Error
+        )]
+        level: NotificationLevel,
+    ) {
+        let mut terminal = Terminal::new(TestBackend::new(80, 24)).unwrap();
+        terminal
+            .draw(|frame| {
+                let notification = Notification {
+                    message: message_str.into(),
+                    level: level.clone(),
+                    ttl: 1,
+                };
+                notification.render(0, frame, frame.area());
+            })
+            .unwrap();
+        let mut hasher = DefaultHasher::new();
+        message_str.hash(&mut hasher);
+        let hash = hasher.finish();
+        let snapshot_name = format!("{}-{:?}", hash, level);
+        assert_snapshot!(snapshot_name, terminal.backend());
+    }
+}
